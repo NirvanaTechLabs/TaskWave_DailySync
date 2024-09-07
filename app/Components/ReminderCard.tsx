@@ -1,14 +1,17 @@
-import React, { memo, useEffect, useMemo } from "react";
+import { useNavigation } from "@react-navigation/native";
+import React, { memo, useCallback, useMemo } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 import { useAppContext } from "../Contexts/ThemeProvider";
 import AssetsPath from "../Global/AssetsPath";
 import { FONTS } from "../Global/Theme";
 import { useCountdownTimer } from "../Hooks/useCountdownTimer";
-import useThemeColors from "../Theme/useThemeMode";
-import { Notification, NotificationType } from "../Types/Interface";
 import useNotificationIconColors from "../Hooks/useNotificationIconColors";
-import { useNavigation } from "@react-navigation/native";
+import useThemeColors from "../Theme/useThemeMode";
+import { Notification } from "../Types/Interface";
+import { formatNotificationType } from "../Utils/formatNotificationType";
+import { getNotificationIcon } from "../Utils/getNotificationIcon";
+import AnimatedRollingNumber from "react-native-animated-rolling-numbers";
 
 const LOGO_SIZE = 65;
 
@@ -21,67 +24,15 @@ export interface NotificationColor {
   typeColor: string;
   iconColor: string;
   createViewColor: string;
+  icon: number;
 }
 
-export const formatNotificationType = (type: string) => {
-  if (type === "whatsappBusiness") return "Whatsapp Business";
-  return type
-    .split(" ")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-};
-
-const getNotificationIcon = (type: NotificationType) => {
-  switch (type) {
-    case "whatsapp":
-      return AssetsPath.ic_whatsapp;
-    case "whatsappBusiness":
-      return AssetsPath.ic_whatsappBusiness;
-    case "SMS":
-      return AssetsPath.ic_sms;
-    case "gmail":
-      return AssetsPath.ic_gmail;
-    default:
-      return null;
-  }
-};
-
-const ReminderCard: React.FC<ReminderCardProps> = memo(({ notification }) => {
+const ReminderCard: React.FC<ReminderCardProps> = ({ notification }) => {
   const colors = useThemeColors();
   const { theme } = useAppContext();
   const navigation = useNavigation();
-  const { timeLeft, startCountdown } = useCountdownTimer(notification.timer);
+  const { timeLeft } = useCountdownTimer(notification.timer);
   const notificationColors = useNotificationIconColors(notification.type);
-
-  useEffect(() => {
-    startCountdown(notification.timer);
-  }, [notification.timer, startCountdown]);
-
-  // const notificationColors = useMemo(() => {
-  //   const colorMap: Record<NotificationType, NotificationColor> = {
-  //     whatsapp: {
-  //       backgroundColor: colors.whatsappBackground,
-  //       typeColor: colors.whatsapp,
-  //       iconColor: colors.whatsappDark,
-  //     },
-  //     whatsappBusiness: {
-  //       backgroundColor: colors.whatsappBusinessBackground,
-  //       typeColor: colors.whatsappBusiness,
-  //       iconColor: colors.whatsappBusinessDark,
-  //     },
-  //     SMS: {
-  //       backgroundColor: colors.smsBackground,
-  //       typeColor: colors.sms,
-  //       iconColor: colors.smsDark,
-  //     },
-  //     gmail: {
-  //       backgroundColor: colors.gmailBackground,
-  //       typeColor: colors.gmail,
-  //       iconColor: colors.gmailDark,
-  //     },
-  //   };
-  //   return colorMap[notification.type];
-  // }, [notification.type, colors]);
 
   const cardBackgroundColor = useMemo(() => {
     return theme === "dark"
@@ -109,19 +60,24 @@ const ReminderCard: React.FC<ReminderCardProps> = memo(({ notification }) => {
     [notification.type]
   );
 
+  const onCardPress = useCallback(() => {
+    navigation.navigate("ReminderPreview", {
+      notificationType: notification.type,
+    });
+  }, [notification]);
+
+  const onEditPress = useCallback(() => {
+    navigation.navigate("CreateReminder", {
+      notificationType: notification.type,
+    });
+  }, [notification]);
+
   return (
     <Animated.View
       entering={FadeIn.duration(1 * Number(notification.id))}
       style={[styles.cardContainer, { backgroundColor: cardBackgroundColor }]}
     >
-      <Pressable
-        style={styles.pressableContainer}
-        onPress={() =>
-          navigation.navigate("CreateReminder", {
-            notificationType: notification.type,
-          })
-        }
-      >
+      <Pressable style={styles.pressableContainer} onPress={onCardPress}>
         <View style={styles.rowContainer}>
           <View style={styles.logoWrapper}>
             <View
@@ -163,6 +119,7 @@ const ReminderCard: React.FC<ReminderCardProps> = memo(({ notification }) => {
             <Text style={[styles.typeText, { color: typeColor }]}>
               {formatNotificationType(notification.type)}
             </Text>
+
             <Image
               tintColor={typeColor}
               source={AssetsPath.ic_notification}
@@ -188,14 +145,14 @@ const ReminderCard: React.FC<ReminderCardProps> = memo(({ notification }) => {
             </View>
           </View>
           <View style={styles.actionsContainer}>
-            <Pressable onPress={() => console.log("edit")}>
+            <Pressable onPress={onEditPress}>
               <Image
                 tintColor={typeColor}
                 source={AssetsPath.ic_edit}
                 style={styles.actionIcon}
               />
             </Pressable>
-            <Pressable onPress={() => console.log("view")}>
+            <Pressable onPress={onCardPress}>
               <Image
                 tintColor={typeColor}
                 source={AssetsPath.ic_view}
@@ -214,14 +171,14 @@ const ReminderCard: React.FC<ReminderCardProps> = memo(({ notification }) => {
       </Pressable>
     </Animated.View>
   );
-});
+};
 
-export default ReminderCard;
+export default memo(ReminderCard);
 
 const styles = StyleSheet.create({
   cardContainer: {
     width: "100%",
-    height: 120,
+    height: 125,
     borderRadius: 10,
     paddingHorizontal: 10,
     paddingVertical: 8,
@@ -280,7 +237,7 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     flex: 0.2,
-    top: 2,
+    top: 4,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
