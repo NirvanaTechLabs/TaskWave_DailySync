@@ -5,6 +5,7 @@ declare global {
 }
 
 export type RootStackParamList = {
+  OnBoarding: undefined;
   BottomTab:
     | {
         screen?:
@@ -27,7 +28,7 @@ export type RootStackParamList = {
     themeColor: string;
   };
   ReminderPreview: {
-    notificationType: NotificationType;
+    notificationData: Notification;
   };
 };
 

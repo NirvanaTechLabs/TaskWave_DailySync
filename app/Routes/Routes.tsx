@@ -1,4 +1,8 @@
-import { NavigationContainer } from "@react-navigation/native";
+import {
+  DefaultTheme,
+  NavigationContainer,
+  Theme,
+} from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import BottomTab from "./BottomTab";
@@ -10,6 +14,7 @@ import { useAppContext } from "../Contexts/ThemeProvider";
 import AddReminder from "../Screens/AddReminder/AddReminder";
 import ReminderScheduled from "../Screens/AddReminder/ReminderScheduled";
 import ReminderPreview from "../Screens/Preview/ReminderPreview";
+import OnBoarding from "../Screens/OnBoarding/Index";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -17,8 +22,17 @@ const Routes = () => {
   const colors = useThemeColors();
   const { theme } = useAppContext();
 
+  const MyTheme: Theme = {
+    ...DefaultTheme,
+    colors: {
+      ...DefaultTheme.colors,
+      primary: colors.background,
+      card: colors.background,
+    },
+  };
+
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={MyTheme}>
       <SafeAreaView style={styles.container}>
         <StatusBar
           translucent
@@ -26,12 +40,14 @@ const Routes = () => {
           barStyle={theme === "dark" ? "light-content" : "dark-content"}
         />
         <Stack.Navigator
-          screenOptions={{
+          screenOptions={({ route }) => ({
             headerShown: false,
             animation: "ios",
-            navigationBarColor: colors.background,
-          }}
+            navigationBarColor:
+              route?.name === "OnBoarding" ? colors.white : colors.bottomTab,
+          })}
         >
+          <Stack.Screen name="OnBoarding" component={OnBoarding} />
           <Stack.Screen name="BottomTab" component={BottomTab} />
           {/* Create Reminder Is Add Reminder Added In Bottom Tab Also */}
           <Stack.Screen name="CreateReminder" component={AddReminder} />
